@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Logements</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+        }
+        form, table {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        input[type="number"], input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-top: 10px;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .edit-btn, .delete-btn {
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .edit-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .delete-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        .save-btn, .cancel-btn {
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .save-btn {
+            background-color: #008CBA;
+            color: white;
+        }
+        .cancel-btn {
+            background-color: #e7e7e7;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestion des Logements</h1>
+
+        <!-- Add New Logement Form -->
+        <h2>Ajouter un Logement</h2>
+        <form id="addLogementForm">
+            <input type="number" id="reference" placeholder="Référence" required>
+            <input type="text" id="adresse" placeholder="Adresse" required>
+            <input type="text" id="delegation" placeholder="Délégation" required>
+            <input type="text" id="gouvernorat" placeholder="Gouvernorat" required>
+            <input type="text" id="type" placeholder="Type" required>
+            <input type="text" id="description" placeholder="Description" required>
+            <input type="number" id="prix" placeholder="Prix (€)" required>
+            <button type="submit">Ajouter</button>
+        </form>
+
+        <!-- Logement Table -->
+        <h2>Liste des Logements</h2>
+        <table id="logementTable">
+            <thead>
+                <tr>
+                    <th>Référence</th>
+                    <th>Adresse</th>
+                    <th>Délégation</th>
+                    <th>Gouvernorat</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Prix (€)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:8080/LogementRendezVous_Etudiant_war/api/logement";
+
+        async function fetchLogements() {
+            try {
+                const response = await fetch(`${API_URL}/getAll`);
+                const logements = await response.json();
+                const tableBody = document.getElementById("logementTable").getElementsByTagName('tbody')[0];
+                tableBody.innerHTML = "";
+
+                logements.forEach(logement => {
+                    const row = document.createElement("tr");
+                    row.dataset.reference = logement.reference;  // Store the reference as data-attribute
+                    
+                    row.innerHTML = `
+                        <td>${logement.reference}</td>
+                        <td class="editable">${logement.adresse}</td>
+                        <td class="editable">${logement.delegation}</td>
+                        <td class="editable">${logement.gouvernorat}</td>
+                        <td class="editable">${logement.type}</td>
+                        <td class="editable">${logement.description}</td>
+                        <td class="editable">${logement.prix}</td>
+                        <td>
+                            <button class="edit-btn" onclick="editLogement(${logement.reference})">Modifier</button>
+                            <button class="delete-btn" onclick="deleteLogement(${logement.reference})">Supprimer</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Erreur lors de la récupération des logements:", error);
+            }
+        }
+
+        async function addLogement(logement) {
+            const response = await fetch(`${API_URL}/new`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(logement),
+            });
+
+            if (response.ok) {
+                alert("Logement ajouté !");
+                fetchLogements(); // ✅ Refresh list after adding
+            }
+        }
+
+        async function updateLogement(reference, logement) {
+            const response = await fetch(`${API_URL}/update/${reference}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(logement),
+            });
+
+            if (response.ok) {
+                alert("Logement mis à jour !");
+                fetchLogements(); // ✅ Refresh list after updating
+            } else {
+                alert("Erreur lors de la mise à jour.");
+            }
+        }
+
+        async function deleteLogement(reference) {
+            const response = await fetch(`${API_URL}/delete/${reference}`, {
+                method: "DELETE",
+            });
+
+            if (response.ok) {
+                alert("Logement supprimé !");
+                fetchLogements(); // ✅ Refresh list after deleting
+            } else {
+                alert("Erreur lors de la suppression.");
+            }
+        }
+
+        function editLogement(reference) {
+            const row = document.querySelector(`tr[data-reference="${reference}"]`);
+            const cells = row.querySelectorAll(".editable");
+
+            // Temporarily store the original values before changing them
+            const originalValues = Array.from(cells).map(cell => cell.innerText);
+
+            cells.forEach((cell, index) => {
+                const currentValue = cell.innerText;
+                const input = document.createElement("input");
+                input.value = currentValue;
+                input.classList.add("editable-input");
+                
+                // Link input with correct column
+                input.dataset.index = index;
+                input.dataset.originalValue = originalValues[index];
+
+                // Change the cell content to the input
+                cell.innerHTML = "";
+                cell.appendChild(input);
+            });
+
+            const actionsCell = row.querySelector("td:last-child");
+            actionsCell.innerHTML = `
+                <button class="save-btn" onclick="saveChanges(${reference})">Sauvegarder</button>
+                <button class="cancel-btn" onclick="cancelEdit(${reference})">Annuler</button>
+            `;
+        }
+
+        function saveChanges(reference) {
+            const row = document.querySelector(`tr[data-reference="${reference}"]`);
+            const inputs = row.querySelectorAll("input");
+
+            // Collect updated values from the input fields
+            const updatedLogement = {
+                reference: reference,
+                adresse: inputs[0].value,
+                delegation: inputs[1].value,
+                gouvernorat: inputs[2].value,
+                type: inputs[3].value,
+                description: inputs[4].value,
+                prix: parseFloat(inputs[5].value),
+            };
+
+            updateLogement(reference, updatedLogement);
+        }
+
+        function cancelEdit(reference) {
+            const row = document.querySelector(`tr[data-reference="${reference}"]`);
+            const cells = row.querySelectorAll(".editable");
+
+            cells.forEach((cell, index) => {
+                cell.innerHTML = cell.dataset.originalValue;  // Revert to the original value
+            });
+
+            const actionsCell = row.querySelector("td:last-child");
+            actionsCell.innerHTML = `
+                <button class="edit-btn" onclick="editLogement(${reference})">Modifier</button>
+                <button class="delete-btn" onclick="deleteLogement(${reference})">Supprimer</button>
+            `;
+        }
+
+        document.getElementById("addLogementForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const logement = {
+                reference: document.getElementById("reference").value,
+                adresse: document.getElementById("adresse").value,
+                delegation: document.getElementById("delegation").value,
+                gouvernorat: document.getElementById("gouvernorat").value,
+                type: document.getElementById("type").value,
+                description: document.getElementById("description").value,
+                prix: parseFloat(document.getElementById("prix").value),
+            };
+
+            addLogement(logement);
+        });
+
+        fetchLogements();
+    </script>
+</body>
+</html>
